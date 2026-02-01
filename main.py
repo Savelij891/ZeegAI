@@ -1,4 +1,30 @@
 # ==============================================================
+# Авто установка необходимых библиотек
+# ==============================================================
+
+import sys
+import subprocess
+
+REQUIRED_PACKAGES = [
+    "requests",
+    "customtkinter",
+    "Pillow",
+    "pyperclip"
+]
+
+def install_and_import(package):
+    try:
+        __import__(package)
+    except ImportError:
+        print(f"[SETUP] Installing {package}...")
+        subprocess.check_call([
+            sys.executable, "-m", "pip", "install", package
+        ])
+
+for pkg in REQUIRED_PACKAGES:
+    install_and_import(pkg)
+    
+# ==============================================================
 # DeepSeek Chat клиент для Groq API
 # ==============================================================
 import os
@@ -282,4 +308,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
