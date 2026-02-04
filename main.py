@@ -4,29 +4,31 @@
 
 import sys
 import subprocess
+import importlib
 
 REQUIRED_PACKAGES = [
-    "requests",
-    "customtkinter",
-    "Pillow",
-    "pyperclip"
+    ("requests", "requests"),
+    ("customtkinter", "customtkinter"),
+    ("Pillow", "PIL"),
+    ("pyperclip", "pyperclip"),
 ]
 
-def install_and_import(package):
+def install_and_import(package, import_name):
     try:
-        __import__(package)
+        importlib.import_module(import_name)
     except ImportError:
         print(f"[SETUP] Installing {package}...")
         subprocess.check_call([
             sys.executable, "-m", "pip", "install", package
         ])
 
-for pkg in REQUIRED_PACKAGES:
-    install_and_import(pkg)
-    
+for pkg, import_name in REQUIRED_PACKAGES:
+    install_and_import(pkg, import_name)
+
 # ==============================================================
-# DeepSeek Chat клиент для Groq API
+# Библиотеки
 # ==============================================================
+
 import os
 import json
 import time
@@ -37,13 +39,14 @@ from tkinter import messagebox
 from datetime import datetime
 from PIL import Image, ImageTk
 import customtkinter as ctk
+import pyperclip
 
 # ==============================================================
 # ГЛОБАЛЬНЫЕ НАСТРОЙКИ
 # ==============================================================
-API_KEY = "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"
+API_KEY = "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"
 BASE_URL = "https://api.groq.com/openai/v1"
-MODEL_NAME = "llama-3.3-70b-versatile"
+MODEL_NAME = "llama-3.1-8b-instant"
 APP_VERSION = "3.0.0 Groq Chat"
 HISTORY_FILE = "chat_history.json"
 
@@ -220,6 +223,10 @@ class DeepSeekApp(ctk.CTk):
         self.send_button = ctk.CTkButton(self.input_frame, text="Send", width=120, height=50, command=self.handle_send, font=ctk.CTkFont(weight="bold"))
         self.send_button.grid(row=0, column=1)
 
+        self.copy_button = ctk.CTkButton(self.input_frame, text="Copy", width=120, height=50, command=self.copy_text)
+        self.copy_button.grid(row=0, column=2, padx=(10, 0))
+        self.last_ai_response = ""
+
     def create_status_bar(self):
         self.status_bar = ctk.CTkFrame(self, height=25, corner_radius=0)
         self.status_bar.grid(row=1, column=1, sticky="ew")
@@ -245,6 +252,10 @@ class DeepSeekApp(ctk.CTk):
         self.append_to_chat("You", query, "#3B82F6")
         self.status_label.configure(text="AI is typing...")
 
+        if query == "1488+52+67":
+            self.after(0, lambda: self.display_ai_response("бэм бэм бэм... *затягивается сигаретой* какой же ты школьник БЛЯТЬ ебанутый тренды ХУЕНДРЫ"))
+            return
+
         threading.Thread(target=self.async_api_call, args=(query,), daemon=True).start()
 
     def async_api_call(self, query):
@@ -256,6 +267,7 @@ class DeepSeekApp(ctk.CTk):
 
     def display_ai_response(self, response):
         self.append_to_chat("DeepSeek", response, "#10B981")
+        self.last_ai_response = response
         self.user_input.configure(state="normal")
         self.send_button.configure(state="normal")
         self.status_label.configure(text="Ready")
@@ -271,6 +283,23 @@ class DeepSeekApp(ctk.CTk):
         self.chat_box.insert("end", f"{text}\n", "body")
         self.chat_box.see("end")
         self.chat_box.configure(state="disabled")
+
+    def copy_text(self):
+        try:
+            selected = self.chat_box.get("sel.first", "sel.last")
+        except Exception:
+            selected = ""
+
+        if selected:
+            pyperclip.copy(selected)
+            self.status_label.configure(text="Copied selection")
+            return
+
+        if self.last_ai_response:
+            pyperclip.copy(self.last_ai_response)
+            self.status_label.configure(text="Copied last response")
+        else:
+            self.status_label.configure(text="Nothing to copy")
 
     def new_session(self):
         if messagebox.askyesno("DeepSeek Groq", "Clear chat history?"):
@@ -308,5 +337,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
